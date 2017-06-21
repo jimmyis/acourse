@@ -34,6 +34,7 @@ type (
 	keyAdminCourses        struct{}
 	keyAdminPayments       struct{}
 	keyAdminPaymentReject  struct{}
+	keyAdminUserEdit       struct{}
 )
 
 // Page type provides layout data like title, description, and og
@@ -278,6 +279,18 @@ func AdminUsers(w http.ResponseWriter, r *http.Request, users []*model.User, cur
 		TotalPage   int
 	}{page, users, currentPage, totalPage}
 	render(ctx, w, keyAdminUsers{}, &data)
+}
+
+// AdminUserEdit renders admin user edit view
+func AdminUserEdit(w http.ResponseWriter, r *http.Request, user *model.User) {
+	ctx := r.Context()
+	page := newPage(ctx)
+
+	data := struct {
+		*Page
+		User *model.User
+	}{page, user}
+	render(ctx, w, keyAdminUserEdit{}, &data)
 }
 
 // AdminCourses renders admin courses view

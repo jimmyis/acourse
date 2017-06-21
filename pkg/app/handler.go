@@ -26,6 +26,7 @@ func Mount(mux *http.ServeMux) {
 
 	admin := http.NewServeMux()
 	admin.Handle("/users", http.HandlerFunc(adminUsers))
+	admin.Handle("/users/edit", http.HandlerFunc(adminUserEdit))
 	admin.Handle("/courses", http.HandlerFunc(adminCourses))
 	admin.Handle("/payments/pending", http.HandlerFunc(adminPendingPayments))
 	admin.Handle("/payments/history", http.HandlerFunc(adminHistoryPayments))

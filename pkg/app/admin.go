@@ -41,6 +41,10 @@ func adminUsers(w http.ResponseWriter, r *http.Request) {
 	view.AdminUsers(w, r, users, int(page), int(totalPage))
 }
 
+func adminUserEdit(w http.ResponseWriter, r *http.Request) {
+	view.AdminUserEdit(w, r, nil)
+}
+
 func adminCourses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	page, _ := strconv.ParseInt(r.FormValue("page"), 10, 64)
