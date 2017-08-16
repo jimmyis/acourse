@@ -15,5 +15,4 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['tag', 'gcr.io/$PROJECT_ID/acourse', 'gcr.io/$PROJECT_ID/acourse:$COMMIT_SHA']
 images:
-  - 'gcr.io/$PROJECT_ID/acourse:latest'
   - 'gcr.io/$PROJECT_ID/acourse:$COMMIT_SHA'
