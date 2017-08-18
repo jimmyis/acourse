@@ -251,7 +251,7 @@ func postEditorCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		f.Add("Errors", err.Error())
 		back(w, r)
@@ -362,7 +362,7 @@ func postEditorCourse(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		f.Add("Errors", err.Error())
 		back(w, r)
@@ -601,7 +601,7 @@ func postCourseEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newPayment := false
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -714,7 +714,7 @@ func editorContentCreate(w http.ResponseWriter, r *http.Request) {
 			i       int64
 		)
 
-		tx, err := db.BeginTx(ctx, nil)
+		tx, err := db.BeginTxx(ctx, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

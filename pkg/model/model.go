@@ -19,6 +19,8 @@ type DB interface {
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 }
 
 func strID(id int64) string {

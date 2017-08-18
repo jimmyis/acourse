@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/lib/pq"
@@ -11,21 +12,22 @@ import (
 
 // User model
 type User struct {
-	ID        string
-	Role      UserRole
-	Username  string
-	Name      string
-	Email     sql.NullString
-	AboutMe   string
-	Image     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string         `db:"id"`
+	Username  string         `db:"username"`
+	Name      string         `db:"name"`
+	Email     sql.NullString `db:"email"`
+	AboutMe   string         `db:"about_me"`
+	Image     string         `db:"image"`
+	CreatedAt time.Time      `db:"created_at"`
+	UpdatedAt time.Time      `db:"updated_at"`
+
+	Role
 }
 
-// UserRole type
-type UserRole struct {
-	Admin      sql.NullBool
-	Instructor sql.NullBool
+// Role type
+type Role struct {
+	Admin      sql.NullBool `db:"admin"`
+	Instructor sql.NullBool `db:"instructor"`
 }
 
 const (
@@ -113,7 +115,23 @@ func GetUsers(ctx context.Context, db DB, userIDs []string) ([]*User, error) {
 // GetUser gets user from id
 func GetUser(ctx context.Context, db DB, userID string) (*User, error) {
 	var x User
-	err := scanUser(db.QueryRowContext(ctx, queryGetUser, userID).Scan, &x)
+	err := db.GetContext(ctx, &x, `
+		select
+			users.id,
+			users.name,
+			users.username,
+			users.email,
+			users.about_me,
+			users.image,
+			users.created_at,
+			users.updated_at,
+			roles.admin,
+			roles.instructor
+		from users
+			left join roles on users.id = roles.user_id
+			where users.id = $1
+		`, userID)
+	log.Println(err)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

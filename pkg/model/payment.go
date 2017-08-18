@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
 
@@ -87,7 +88,7 @@ const (
 )
 
 // CreatePayment creates new payment
-func CreatePayment(ctx context.Context, tx *sql.Tx, x *Payment) error {
+func CreatePayment(ctx context.Context, tx *sqlx.Tx, x *Payment) error {
 	_, err := tx.ExecContext(ctx, `
 		insert into payments
 			(user_id, course_id, image, price, original_price, code, status)
@@ -102,7 +103,7 @@ func CreatePayment(ctx context.Context, tx *sql.Tx, x *Payment) error {
 }
 
 // Accept accepts a payment and create new enroll
-func (x *Payment) Accept(ctx context.Context, tx *sql.Tx) error {
+func (x *Payment) Accept(ctx context.Context, tx *sqlx.Tx) error {
 	if x.ID == 0 {
 		return fmt.Errorf("payment must be save before accept")
 	}

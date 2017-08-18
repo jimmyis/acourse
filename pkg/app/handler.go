@@ -190,7 +190,7 @@ func openIDCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

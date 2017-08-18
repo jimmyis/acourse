@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"encoding/gob"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/acoshift/acourse/pkg/view"
 	"github.com/acoshift/go-firebase-admin"
 	"github.com/garyburd/redigo/redis"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 	"gopkg.in/gomail.v2"
@@ -23,7 +23,7 @@ var (
 	emailFrom     string
 	baseURL       string
 	xsrfSecret    string
-	db            *sql.DB
+	db            *sqlx.DB
 	firAuth       *admin.Auth
 	redisAddr     string
 	redisPass     string
@@ -105,7 +105,7 @@ func Init(config Config) error {
 	sessionSecret = config.SessionSecret
 
 	// init databases
-	db, err = sql.Open("postgres", config.SQLURL)
+	db, err = sqlx.Open("postgres", config.SQLURL)
 	if err != nil {
 		return err
 	}
