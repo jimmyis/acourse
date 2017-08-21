@@ -290,7 +290,7 @@ func postEditorCreate(w http.ResponseWriter, r *http.Request) {
 	var link sql.NullString
 	db.QueryRowContext(ctx, `select url from courses where id = $1`, id).Scan(&link)
 	if !link.Valid {
-		http.Redirect(w, r, "/course/"+id, http.StatusFound)
+		http.Redirect(w, r, "/course/"+strconv.FormatInt(id, 10), http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, "/course/"+link.String, http.StatusFound)
