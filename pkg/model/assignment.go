@@ -4,14 +4,14 @@ import "context"
 
 // Assignment model
 type Assignment struct {
-	ID    string
+	ID    int64
 	Title string
 	Desc  string
 	Open  bool
 }
 
 // GetAssignments gets assignments
-func GetAssignments(ctx context.Context, db DB, courseID string) ([]*Assignment, error) {
+func GetAssignments(ctx context.Context, db DB, courseID int64) ([]*Assignment, error) {
 	rows, err := db.QueryContext(ctx, `
 		select
 			id, title, long_desc, open
