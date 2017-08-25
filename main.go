@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/acoshift/acourse/pkg/app"
+	"github.com/acoshift/acourse/app"
 	"github.com/acoshift/configfile"
 	"github.com/acoshift/gzip"
 	"github.com/acoshift/hsts"

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/acoshift/acourse/pkg/model"
-	"github.com/acoshift/acourse/pkg/view"
+	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/view"
 )
 
 func adminUsers(w http.ResponseWriter, r *http.Request) {

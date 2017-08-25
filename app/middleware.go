@@ -7,9 +7,9 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/acoshift/acourse/pkg/appctx"
-	"github.com/acoshift/acourse/pkg/model"
-	"github.com/acoshift/acourse/pkg/view"
+	"github.com/acoshift/acourse/appctx"
+	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/view"
 	"github.com/acoshift/cachestatic"
 	"github.com/acoshift/header"
 	"github.com/acoshift/middleware"

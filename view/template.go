@@ -15,7 +15,7 @@ import (
 
 	"github.com/acoshift/session"
 
-	"github.com/acoshift/acourse/pkg/model"
+	"github.com/acoshift/acourse/model"
 	"github.com/acoshift/header"
 	"github.com/dustin/go-humanize"
 	"github.com/microcosm-cc/bluemonday"

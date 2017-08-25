@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/acoshift/acourse/pkg/view"
+	"github.com/acoshift/acourse/view"
 	"github.com/acoshift/go-firebase-admin"
 	"github.com/garyburd/redigo/redis"
 	"golang.org/x/oauth2/google"

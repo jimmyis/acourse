@@ -3,7 +3,7 @@ package appctx
 import (
 	"context"
 
-	"github.com/acoshift/acourse/pkg/model"
+	"github.com/acoshift/acourse/model"
 )
 
 type (

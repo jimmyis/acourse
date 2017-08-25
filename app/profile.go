@@ -5,9 +5,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/acoshift/acourse/pkg/appctx"
-	"github.com/acoshift/acourse/pkg/model"
-	"github.com/acoshift/acourse/pkg/view"
+	"github.com/acoshift/acourse/appctx"
+	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/view"
 	"github.com/acoshift/header"
 	"github.com/acoshift/session"
 	"github.com/asaskevich/govalidator"
