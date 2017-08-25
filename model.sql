@@ -1,6 +1,8 @@
 create database acourse;
 
-set database = acourse;
+\c acourse;
+
+create extension pgcrypto;
 
 create table users (
   id varchar not null,
