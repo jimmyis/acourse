@@ -9,7 +9,7 @@ default:
 	# `make style` builds style
 
 dev:
-	go run -tags dev cmd/acourse/main.go
+	go run -tags dev main.go
 
 deploy: cluster patch
 
@@ -28,7 +28,7 @@ clean:
 	rm -f static.yaml
 
 build:
-	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o entrypoint -a -ldflags '-w -s' cmd/acourse/main.go
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o entrypoint -a -ldflags '-w -s' github.com/acoshift/acourse
 
 docker: clean style build
 	gcloud docker -- build -t $(REGISTRY)/$(SERVICE):$(COMMIT_SHA) .
