@@ -27,7 +27,7 @@ func Handler(userRepo user.Repository) http.Handler {
 	editor.Handle("/content/edit", http.HandlerFunc(editorContentEdit))
 
 	admin := http.NewServeMux()
-	admin.Handle("/users", http.HandlerFunc(adminUsers))
+	admin.Handle("/users", http.HandlerFunc(makeAdminUsers(userRepo)))
 	admin.Handle("/courses", http.HandlerFunc(adminCourses))
 	admin.Handle("/payments/pending", http.HandlerFunc(adminPendingPayments))
 	admin.Handle("/payments/history", http.HandlerFunc(adminHistoryPayments))

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/acoshift/acourse/user"
 	"github.com/lib/pq"
 )
 
@@ -23,7 +24,7 @@ type Payment struct {
 	UpdatedAt     time.Time
 	At            pq.NullTime
 
-	User   User
+	User   user.User
 	Course Course
 }
 

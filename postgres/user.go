@@ -65,12 +65,12 @@ func (r *userRepository) Store(ctx context.Context, user *user.User) error {
 			)
 		values
 			(
-				id = @id,
-				name = @name,
-				username = @username,
-				email = @email,
-				about_me = @about_me,
-				image = @image,
+				id = $1,
+				name = $2,
+				username = $3,
+				email = $4,
+				about_me = $5,
+				image = $6,
 				updated_at = now()
 			)
 		on conflict do update set
@@ -82,12 +82,15 @@ func (r *userRepository) Store(ctx context.Context, user *user.User) error {
 			image = excluded.image,
 			updated_at = excluded.updated_at,
 	`,
-		sql.Named("id", user.ID),
-		sql.Named("name", user.Name),
-		sql.Named("username", user.Username),
-		sql.Named("email", sql.NullString{String: user.Email, Valid: len(user.Email) > 0}),
-		sql.Named("about_me", user.ID),
-		sql.Named("image", user.ID),
+		user.ID,       // 1
+		user.Name,     // 2
+		user.Username, // 3
+		sql.NullString{
+			String: user.Email,
+			Valid:  len(user.Email) > 0,
+		}, // 4
+		user.AboutMe, // 5
+		user.Image,   // 6
 	)
 	if err != nil {
 		return err
@@ -152,9 +155,9 @@ func (r *userRepository) FindEmail(ctx context.Context, email string) (*user.Use
 			coalesce(roles.admin, false),
 			coalesce(roles.instructor, false)
 		from users
-		where users.email = @email
+		where users.email = $1
 	`,
-		sql.Named("email", email),
+		email, // 1
 	).Scan(
 		&x.ID,
 		&x.Name,
@@ -192,9 +195,9 @@ func (r *userRepository) FindUsername(ctx context.Context, username string) (*us
 			coalesce(roles.admin, false),
 			coalesce(roles.instructor, false)
 		from users
-		where users.username = @username
+		where users.username = $1
 	`,
-		sql.Named("username", username),
+		username, // 1
 	).Scan(
 		&x.ID,
 		&x.Name,
@@ -234,11 +237,10 @@ func (r *userRepository) List(ctx context.Context, limit, offset int64) ([]*user
 		from users
 			left join roles on users.id = roles.user_id
 		order by users.created_at desc
-		limit @limit
-		offset @offset
+		limit $1 offset $2
 	`,
-		sql.Named("limit", limit),
-		sql.Named("offset", offset),
+		limit,  // 1
+		offset, // 2
 	)
 	if err != nil {
 		return nil, err

@@ -279,13 +279,13 @@ func Assignment(w http.ResponseWriter, r *http.Request, course *model.Course, as
 }
 
 // AdminUsers renders admin users view
-func AdminUsers(w http.ResponseWriter, r *http.Request, users []*model.User, currentPage, totalPage int) {
+func AdminUsers(w http.ResponseWriter, r *http.Request, users []*user.User, currentPage, totalPage int) {
 	ctx := r.Context()
 	page := newPage(ctx)
 
 	data := struct {
 		*Page
-		Users       []*model.User
+		Users       []*user.User
 		CurrentPage int
 		TotalPage   int
 	}{page, users, currentPage, totalPage}
