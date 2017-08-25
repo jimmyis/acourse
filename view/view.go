@@ -9,6 +9,7 @@ import (
 
 	"github.com/acoshift/acourse/appctx"
 	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/user"
 	"github.com/acoshift/flash"
 	"github.com/acoshift/header"
 	"github.com/acoshift/session"
@@ -44,7 +45,7 @@ type Page struct {
 	Desc  string
 	Image string
 	URL   string
-	Me    *model.User
+	Me    *user.User
 	Flash flash.Flash
 	XSRF  template.HTML
 }

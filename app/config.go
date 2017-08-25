@@ -47,7 +47,7 @@ type Config struct {
 	EmailFrom      string
 	BaseURL        string
 	XSRFSecret     string
-	SQLURL         string
+	DB             *sql.DB
 	RedisAddr      string
 	RedisPass      string
 	RedisPrefix    string
@@ -103,13 +103,7 @@ func Init(config Config) error {
 	redisPrefix = config.RedisPrefix
 	slackURL = config.SlackURL
 	sessionSecret = config.SessionSecret
-
-	// init databases
-	db, err = sql.Open("postgres", config.SQLURL)
-	if err != nil {
-		return err
-	}
-	db.SetMaxIdleConns(5)
+	db = config.DB
 
 	// TODO: use in-memory redis for caching
 	cachePool = &redis.Pool{

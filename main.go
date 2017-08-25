@@ -1,12 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/acoshift/acourse/app"
+	"github.com/acoshift/acourse/postgres"
 	"github.com/acoshift/configfile"
 	"github.com/acoshift/gzip"
 	"github.com/acoshift/hsts"
@@ -20,7 +22,21 @@ func main() {
 
 	config := configfile.NewReader("config")
 
-	err := app.Init(app.Config{
+	sqlURL := config.String("sql_url")
+
+	// init databases
+	db, err := sql.Open("postgres", sqlURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db.SetMaxIdleConns(5)
+
+	userRepo, err := postgres.NewUserRepository(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = app.Init(app.Config{
 		ProjectID:      config.String("project_id"),
 		ServiceAccount: config.Bytes("service_account"),
 		BucketName:     config.String("bucket"),
@@ -31,7 +47,7 @@ func main() {
 		EmailFrom:      config.String("email_from"),
 		BaseURL:        config.String("base_url"),
 		XSRFSecret:     config.String("xsrf_key"),
-		SQLURL:         config.String("sql_url"),
+		DB:             db,
 		RedisAddr:      config.String("redis_addr"),
 		RedisPass:      config.String("redis_pass"),
 		RedisPrefix:    config.String("redis_prefix"),
@@ -50,7 +66,7 @@ func main() {
 		redirecthttps.New(redirecthttps.Config{Mode: redirecthttps.OnlyProxy}),
 		hsts.New(hsts.PreloadConfig),
 		gzip.New(gzip.DefaultConfig),
-	)(app.Handler())
+	)(app.Handler(userRepo))
 	mux.Handle("/", h)
 
 	// lets reverse proxy handle other settings

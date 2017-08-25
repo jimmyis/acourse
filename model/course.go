@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"time"
 
+	"github.com/acoshift/acourse/user"
 	"github.com/garyburd/redigo/redis"
 	"github.com/lib/pq"
 )
@@ -15,7 +16,7 @@ import (
 type Course struct {
 	ID            string
 	Option        CourseOption
-	Owner         *User
+	Owner         *user.User
 	EnrollCount   int64
 	Title         string
 	ShortDesc     string
@@ -327,7 +328,7 @@ func ListCourses(ctx context.Context, db DB, limit, offset int64) ([]*Course, er
 	defer rows.Close()
 	for rows.Next() {
 		var x Course
-		x.Owner = &User{}
+		x.Owner = &user.User{}
 		err := rows.Scan(&x.ID,
 			&x.Title, &x.ShortDesc, &x.Desc, &x.Image, &x.Start, &x.URL, &x.Type, &x.Price, &x.Discount, &x.EnrollDetail,
 			&x.CreatedAt, &x.UpdatedAt,

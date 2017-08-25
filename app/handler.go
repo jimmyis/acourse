@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/user"
 	"github.com/acoshift/acourse/view"
 	"github.com/acoshift/go-firebase-admin"
 	"github.com/acoshift/header"
@@ -15,7 +16,7 @@ import (
 )
 
 // Handler returns app's handlers
-func Handler() http.Handler {
+func Handler(userRepo user.Repository) http.Handler {
 	mux := http.NewServeMux()
 
 	editor := http.NewServeMux()
@@ -41,12 +42,12 @@ func Handler() http.Handler {
 	main.Handle("/signout", http.HandlerFunc(signOut))
 	main.Handle("/profile", mustSignedIn(http.HandlerFunc(profile)))
 	main.Handle("/profile/edit", mustSignedIn(http.HandlerFunc(profileEdit)))
-	main.Handle("/course/", http.StripPrefix("/course/", http.HandlerFunc(course)))
+	main.Handle("/course/", http.StripPrefix("/course/", http.HandlerFunc(makeCourse(userRepo))))
 	main.Handle("/admin/", http.StripPrefix("/admin", onlyAdmin(admin)))
 	main.Handle("/editor/", http.StripPrefix("/editor", editor))
 	main.Handle("/reset/password", mustNotSignedIn(http.HandlerFunc(resetPassword)))
 
-	mux.Handle("/", Middleware(main))
+	mux.Handle("/", Middleware(userRepo)(main))
 	mux.Handle("/~/", http.StripPrefix("/~", cache(http.FileServer(&fileFS{http.Dir("static")}))))
 	mux.Handle("/favicon.ico", fileHandler("static/favicon.ico"))
 

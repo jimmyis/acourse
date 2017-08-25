@@ -3,7 +3,7 @@ package appctx
 import (
 	"context"
 
-	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/user"
 )
 
 type (
@@ -13,13 +13,13 @@ type (
 )
 
 // WithUser creates new context with user value
-func WithUser(ctx context.Context, user *model.User) context.Context {
+func WithUser(ctx context.Context, user *user.User) context.Context {
 	return context.WithValue(ctx, userKey{}, user)
 }
 
 // GetUser gets user from context
-func GetUser(ctx context.Context) *model.User {
-	x, _ := ctx.Value(userKey{}).(*model.User)
+func GetUser(ctx context.Context) *user.User {
+	x, _ := ctx.Value(userKey{}).(*user.User)
 	return x
 }
 

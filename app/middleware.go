@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/acoshift/acourse/appctx"
-	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/user"
 	"github.com/acoshift/acourse/view"
 	"github.com/acoshift/cachestatic"
 	"github.com/acoshift/header"
@@ -23,67 +23,69 @@ import (
 const sessName = "sess"
 
 // Middleware wraps handlers with app's middleware
-func Middleware(h http.Handler) http.Handler {
-	cacheInvalidator := make(chan interface{})
+func Middleware(userRepo user.Repository) middleware.Middleware {
+	return func(h http.Handler) http.Handler {
+		cacheInvalidator := make(chan interface{})
 
-	go func() {
-		for {
-			time.Sleep(15 * time.Second)
-			cacheInvalidator <- cachestatic.InvalidateAll
-		}
-	}()
+		go func() {
+			for {
+				time.Sleep(15 * time.Second)
+				cacheInvalidator <- cachestatic.InvalidateAll
+			}
+		}()
 
-	return middleware.Chain(
-		servertiming.Middleware(),
-		panicLogger,
-		session.Middleware(session.Config{
-			Secret:   sessionSecret,
-			Path:     "/",
-			MaxAge:   5 * 24 * time.Hour,
-			HTTPOnly: true,
-			Secure:   session.PreferSecure,
-			Store: redisstore.New(redisstore.Config{
-				Prefix: redisPrefix,
-				Pool: &redis.Pool{
-					MaxIdle:     5,
-					IdleTimeout: 5 * time.Minute,
-					Dial: func() (redis.Conn, error) {
-						return redis.Dial("tcp", redisAddr, redis.DialPassword(redisPass))
+		return middleware.Chain(
+			servertiming.Middleware(),
+			panicLogger,
+			session.Middleware(session.Config{
+				Secret:   sessionSecret,
+				Path:     "/",
+				MaxAge:   5 * 24 * time.Hour,
+				HTTPOnly: true,
+				Secure:   session.PreferSecure,
+				Store: redisstore.New(redisstore.Config{
+					Prefix: redisPrefix,
+					Pool: &redis.Pool{
+						MaxIdle:     5,
+						IdleTimeout: 5 * time.Minute,
+						Dial: func() (redis.Conn, error) {
+							return redis.Dial("tcp", redisAddr, redis.DialPassword(redisPass))
+						},
+						TestOnBorrow: func(c redis.Conn, t time.Time) error {
+							if time.Since(t) > time.Minute {
+								return nil
+							}
+							_, err := c.Do("PING")
+							return err
+						},
 					},
-					TestOnBorrow: func(c redis.Conn, t time.Time) error {
-						if time.Since(t) > time.Minute {
-							return nil
-						}
-						_, err := c.Do("PING")
-						return err
-					},
-				},
+				}),
 			}),
-		}),
-		cachestatic.New(cachestatic.Config{
-			Skipper: func(r *http.Request) bool {
-				// cache only get
-				if r.Method != http.MethodGet {
-					return true
-				}
+			cachestatic.New(cachestatic.Config{
+				Skipper: func(r *http.Request) bool {
+					// cache only get
+					if r.Method != http.MethodGet {
+						return true
+					}
 
-				// skip if signed in
-				s := session.Get(r.Context(), sessName)
-				if x := s.Get(keyUserID); x != nil {
-					return true
-				}
+					// skip if signed in
+					s := session.Get(r.Context(), sessName)
+					if x := s.Get(keyUserID); x != nil {
+						return true
+					}
 
-				// cache only index
-				if r.URL.Path == "/" {
-					return false
-				}
-				return true
-			},
-			Invalidator: cacheInvalidator,
-		}),
-		fetchUser,
-		csrf,
-	)(h)
+					// cache only index
+					if r.URL.Path == "/" {
+						return false
+					}
+					return true
+				},
+				Invalidator: cacheInvalidator,
+			}),
+			makeFetchUser(userRepo),
+			csrf,
+		)(h)
+	}
 }
 
 func panicLogger(h http.Handler) http.Handler {
@@ -160,23 +162,25 @@ func mustNotSignedIn(h http.Handler) http.Handler {
 	})
 }
 
-func fetchUser(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		s := session.Get(ctx, sessName)
-		id, _ := s.Get(keyUserID).(string)
-		if len(id) > 0 {
-			u, err := model.GetUser(ctx, db, id)
-			if err == model.ErrNotFound {
-				u = &model.User{
-					ID:       id,
-					Username: id,
+func makeFetchUser(userRepo user.Repository) middleware.Middleware {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			s := session.Get(ctx, sessName)
+			id, _ := s.Get(keyUserID).(string)
+			if len(id) > 0 {
+				u, err := userRepo.FindID(ctx, id)
+				if err == user.ErrNotFound {
+					u = &user.User{
+						ID:       id,
+						Username: id,
+					}
 				}
+				r = r.WithContext(appctx.WithUser(ctx, u))
 			}
-			r = r.WithContext(appctx.WithUser(ctx, u))
-		}
-		h.ServeHTTP(w, r)
-	})
+			h.ServeHTTP(w, r)
+		})
+	}
 }
 
 func onlyAdmin(h http.Handler) http.Handler {
@@ -186,7 +190,7 @@ func onlyAdmin(h http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		if !u.Role.Admin.Bool {
+		if !u.Role.Admin {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -201,7 +205,7 @@ func onlyInstructor(h http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		if !u.Role.Instructor.Bool {
+		if !u.Role.Instructor {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}

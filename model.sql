@@ -4,7 +4,7 @@ create database acourse;
 
 create extension pgcrypto;
 
-create table users (
+create table if not exists users (
   id varchar not null,
   username varchar not null,
   name varchar not null,
@@ -15,11 +15,11 @@ create table users (
   updated_at timestamp not null default now(),
   primary key (id)
 );
-create unique index on users (username);
-create unique index on users (email);
-create index on users (created_at desc);
+create unique index if not exists users_username_idx on users (username);
+create unique index if not exists users_email_idx on users (email);
+create index if not exists users_created_at_idx on users (created_at desc);
 
-create table roles (
+create table if not exists roles (
   user_id varchar,
   admin bool not null default false,
   instructor bool not null default false,
@@ -28,10 +28,10 @@ create table roles (
   primary key (user_id),
   foreign key (user_id) references users (id)
 );
-create index on roles (admin);
-create index on roles (instructor);
+create index if not exists roles_admin_idx on roles (admin);
+create index if not exists roles_instructor_idx on roles (instructor);
 
-create table courses (
+create table if not exists courses (
   id uuid default gen_random_uuid(),
   user_id varchar not null,
   title varchar not null,
@@ -49,11 +49,11 @@ create table courses (
   primary key (id),
   foreign key (user_id) references users (id)
 );
-create unique index on courses (url);
-create index on courses (created_at desc);
-create index on courses (updated_at desc);
+create unique index if not exists courses_url_idx on courses (url);
+create index if not exists courses_created_at_idx on courses (created_at desc);
+create index if not exists courses_updated_at_idx on courses (updated_at desc);
 
-create table course_options (
+create table if not exists course_options (
   course_id uuid,
   public bool not null default false,
   enroll bool not null default false,
@@ -63,13 +63,13 @@ create table course_options (
   primary key (course_id),
   foreign key (course_id) references courses (id)
 );
-create index on course_options (public);
-create index on course_options (enroll);
-create index on course_options (public, enroll);
-create index on course_options (public, discount);
-create index on course_options (public, discount, enroll);
+create index if not exists course_options_public_idx on course_options (public);
+create index if not exists course_options_enroll_idx on course_options (enroll);
+create index if not exists course_options_public_enroll_idx on course_options (public, enroll);
+create index if not exists course_options_public_discount_idx on course_options (public, discount);
+create index if not exists course_options_public_discount_enroll_idx on course_options (public, discount, enroll);
 
-create table course_contents (
+create table if not exists course_contents (
   id uuid default gen_random_uuid(),
   course_id uuid not null,
   i int not null default 0,
@@ -83,9 +83,9 @@ create table course_contents (
   primary key (id),
   foreign key (course_id) references courses (id)
 );
-create index on course_contents (course_id, i);
+create index if not exists course_contents_course_id_i_idx on course_contents (course_id, i);
 
-create table assignments (
+create table if not exists assignments (
   id uuid default gen_random_uuid(),
   course_id uuid not null,
   i int not null,
@@ -97,9 +97,9 @@ create table assignments (
   primary key (id),
   foreign key (course_id) references courses (id)
 );
-create index on assignments (course_id, i);
+create index if not exists assignments_course_id_i_idx on assignments (course_id, i);
 
-create table user_assignments (
+create table if not exists user_assignments (
   id uuid default gen_random_uuid(),
   user_id varchar not null,
   assignment_id uuid not null,
@@ -109,9 +109,9 @@ create table user_assignments (
   foreign key (user_id) references users (id),
   foreign key (assignment_id) references assignments (id)
 );
-create index on user_assignments (created_at);
+create index if not exists user_assignments_created_at_idx on user_assignments (created_at);
 
-create table enrolls (
+create table if not exists enrolls (
   user_id varchar,
   course_id uuid not null,
   created_at timestamp not null default now(),
@@ -119,11 +119,11 @@ create table enrolls (
   foreign key (user_id) references users (id),
   foreign key (course_id) references courses (id)
 );
-create index on enrolls (created_at);
-create index on enrolls (user_id, created_at);
-create index on enrolls (course_id, created_at);
+create index if not exists enrolls_created_at_idx on enrolls (created_at);
+create index if not exists enrolls_user_id_created_at_idx on enrolls (user_id, created_at);
+create index if not exists enrolls_course_id_created_at_idx on enrolls (course_id, created_at);
 
-create table attends (
+create table if not exists attends (
   id uuid default gen_random_uuid(),
   user_id varchar not null,
   course_id uuid not null,
@@ -132,12 +132,12 @@ create table attends (
   foreign key (user_id) references users (id),
   foreign key (course_id) references courses (id)
 );
-create index on attends (created_at);
-create index on attends (user_id, created_at);
-create index on attends (course_id, created_at);
-create index on attends (user_id, course_id, created_at);
+create index if not exists attends_created_at_idx on attends (created_at);
+create index if not exists attends_user_id_created_at_idx on attends (user_id, created_at);
+create index if not exists attends_course_id_created_at_idx on attends (course_id, created_at);
+create index if not exists attends_user_id_course_id_created_at_idx on attends (user_id, course_id, created_at);
 
-create table payments (
+create table if not exists payments (
   id uuid default gen_random_uuid(),
   user_id varchar not null,
   course_id uuid not null,
@@ -153,7 +153,7 @@ create table payments (
   foreign key (user_id) references users (id),
   foreign key (course_id) references courses (id)
 );
-create index on payments (created_at desc);
-create index on payments (code);
-create index on payments (course_id, code);
-create index on payments (status, created_at desc);
+create index if not exists payments_created_at_idx on payments (created_at desc);
+create index if not exists payments_code_idx on payments (code);
+create index if not exists payments_course_id_code_idx on payments (course_id, code);
+create index if not exists payments_status_created_at_idx on payments (status, created_at desc);

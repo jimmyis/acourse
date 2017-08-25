@@ -11,6 +11,7 @@ import (
 
 	"github.com/acoshift/acourse/appctx"
 	"github.com/acoshift/acourse/model"
+	"github.com/acoshift/acourse/user"
 	"github.com/acoshift/acourse/view"
 	"github.com/acoshift/header"
 	"github.com/acoshift/session"
@@ -18,120 +19,55 @@ import (
 	"github.com/lib/pq"
 )
 
-func course(w http.ResponseWriter, r *http.Request) {
-	s := strings.SplitN(r.URL.Path, "/", 2)
-	var p string
-	if len(s) > 1 {
-		p = strings.TrimSuffix(s[1], "/")
-	}
+func makeCourse(userRepo user.Repository) http.HandlerFunc {
+	courseView := makeCourseView(userRepo)
+	courseContent := makeCourseContent(userRepo)
 
-	r = r.WithContext(appctx.WithCourseURL(r.Context(), s[0]))
-	switch p {
-	case "":
-		courseView(w, r)
-	case "content":
-		mustSignedIn(http.HandlerFunc(courseContent)).ServeHTTP(w, r)
-	case "enroll":
-		mustSignedIn(http.HandlerFunc(courseEnroll)).ServeHTTP(w, r)
-	case "assignment":
-		mustSignedIn(http.HandlerFunc(courseAssignment)).ServeHTTP(w, r)
-	default:
-		view.NotFound(w, r)
+	return func(w http.ResponseWriter, r *http.Request) {
+		s := strings.SplitN(r.URL.Path, "/", 2)
+		var p string
+		if len(s) > 1 {
+			p = strings.TrimSuffix(s[1], "/")
+		}
+
+		r = r.WithContext(appctx.WithCourseURL(r.Context(), s[0]))
+		switch p {
+		case "":
+			courseView(w, r)
+		case "content":
+			mustSignedIn(http.HandlerFunc(courseContent)).ServeHTTP(w, r)
+		case "enroll":
+			mustSignedIn(http.HandlerFunc(courseEnroll)).ServeHTTP(w, r)
+		case "assignment":
+			mustSignedIn(http.HandlerFunc(courseAssignment)).ServeHTTP(w, r)
+		default:
+			view.NotFound(w, r)
+		}
 	}
 }
 
-func courseView(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := appctx.GetUser(ctx)
-	link := appctx.GetCourseURL(ctx)
+func makeCourseView(userRepo user.Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user := appctx.GetUser(ctx)
+		link := appctx.GetCourseURL(ctx)
 
-	// if id can parse to uuid get course from id
-	id := link
-	_, err := uuid.Parse(link)
-	if err != nil {
-		// link can not parse to uuid get course id from url
-		id, err = model.GetCourseIDFromURL(ctx, db, link)
-		if err == model.ErrNotFound {
-			view.NotFound(w, r)
-			return
-		}
+		// if id can parse to uuid get course from id
+		id := link
+		_, err := uuid.Parse(link)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-	x, err := model.GetCourse(ctx, db, id)
-	if err == model.ErrNotFound {
-		view.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// if course has url, redirect to course url
-	if x.URL.Valid && x.URL.String != link {
-		http.Redirect(w, r, "/course/"+x.URL.String, http.StatusFound)
-		return
-	}
-
-	enrolled := false
-	pendingEnroll := false
-	if user != nil {
-		enrolled, err = model.IsEnrolled(ctx, db, user.ID, x.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if !enrolled {
-			pendingEnroll, err = model.HasPendingPayment(ctx, db, user.ID, x.ID)
+			// link can not parse to uuid get course id from url
+			id, err = model.GetCourseIDFromURL(ctx, db, link)
+			if err == model.ErrNotFound {
+				view.NotFound(w, r)
+				return
+			}
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
-	}
-
-	var owned bool
-	if user != nil {
-		owned = user.ID == x.UserID
-	}
-
-	// if user enrolled or user is owner fetch course contents
-	if enrolled || owned {
-		x.Contents, err = model.GetCourseContents(ctx, db, x.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if owned {
-		x.Owner = user
-	} else {
-		x.Owner, err = model.GetUser(ctx, db, x.UserID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	view.Course(w, r, x, enrolled, owned, pendingEnroll)
-}
-
-func courseContent(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := appctx.GetUser(ctx)
-	link := appctx.GetCourseURL(ctx)
-
-	// if id can parse to uuid get course from id
-	id := link
-	_, err := uuid.Parse(link)
-	if err != nil {
-		// link can not parse to uuid get course id from url
-		id, err = model.GetCourseIDFromURL(ctx, db, link)
+		x, err := model.GetCourse(ctx, db, id)
 		if err == model.ErrNotFound {
 			view.NotFound(w, r)
 			return
@@ -140,59 +76,133 @@ func courseContent(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	}
-	x, err := model.GetCourse(ctx, db, id)
-	if err == model.ErrNotFound {
-		view.NotFound(w, r)
-		return
-	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
-	// if course has url, redirect to course url
-	if x.URL.Valid && x.URL.String != link {
-		http.Redirect(w, r, "/course/"+x.URL.String+"/content", http.StatusFound)
-		return
-	}
+		// if course has url, redirect to course url
+		if x.URL.Valid && x.URL.String != link {
+			http.Redirect(w, r, "/course/"+x.URL.String, http.StatusFound)
+			return
+		}
 
-	enrolled, err := model.IsEnrolled(ctx, db, user.ID, x.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		enrolled := false
+		pendingEnroll := false
+		if user != nil {
+			enrolled, err = model.IsEnrolled(ctx, db, user.ID, x.ID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-	if !enrolled && user.ID != x.UserID {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
+			if !enrolled {
+				pendingEnroll, err = model.HasPendingPayment(ctx, db, user.ID, x.ID)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+		}
 
-	x.Contents, err = model.GetCourseContents(ctx, db, x.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		var owned bool
+		if user != nil {
+			owned = user.ID == x.UserID
+		}
 
-	x.Owner, err = model.GetUser(ctx, db, x.UserID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		// if user enrolled or user is owner fetch course contents
+		if enrolled || owned {
+			x.Contents, err = model.GetCourseContents(ctx, db, x.ID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 
-	var content *model.CourseContent
-	p, _ := strconv.Atoi(r.FormValue("p"))
-	if p < 0 {
-		p = 0
-	}
-	if p > len(x.Contents)-1 {
-		p = len(x.Contents) - 1
-	}
-	if p >= 0 {
-		content = x.Contents[p]
-	}
+		if owned {
+			x.Owner = user
+		} else {
+			x.Owner, err = userRepo.FindID(ctx, x.UserID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 
-	view.CourseContent(w, r, x, content)
+		view.Course(w, r, x, enrolled, owned, pendingEnroll)
+	}
+}
+
+func makeCourseContent(userRepo user.Repository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user := appctx.GetUser(ctx)
+		link := appctx.GetCourseURL(ctx)
+
+		// if id can parse to uuid get course from id
+		id := link
+		_, err := uuid.Parse(link)
+		if err != nil {
+			// link can not parse to uuid get course id from url
+			id, err = model.GetCourseIDFromURL(ctx, db, link)
+			if err == model.ErrNotFound {
+				view.NotFound(w, r)
+				return
+			}
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		x, err := model.GetCourse(ctx, db, id)
+		if err == model.ErrNotFound {
+			view.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// if course has url, redirect to course url
+		if x.URL.Valid && x.URL.String != link {
+			http.Redirect(w, r, "/course/"+x.URL.String+"/content", http.StatusFound)
+			return
+		}
+
+		enrolled, err := model.IsEnrolled(ctx, db, user.ID, x.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !enrolled && user.ID != x.UserID {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		x.Contents, err = model.GetCourseContents(ctx, db, x.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		x.Owner, err = userRepo.FindID(ctx, x.UserID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var content *model.CourseContent
+		p, _ := strconv.Atoi(r.FormValue("p"))
+		if p < 0 {
+			p = 0
+		}
+		if p > len(x.Contents)-1 {
+			p = len(x.Contents) - 1
+		}
+		if p >= 0 {
+			content = x.Contents[p]
+		}
+
+		view.CourseContent(w, r, x, content)
+	}
 }
 
 func editorCreate(w http.ResponseWriter, r *http.Request) {
