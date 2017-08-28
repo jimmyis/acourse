@@ -2,8 +2,9 @@ package course
 
 import (
 	"context"
-	"os/user"
 	"time"
+
+	"github.com/acoshift/acourse/user"
 )
 
 // Course type
