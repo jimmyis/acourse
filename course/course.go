@@ -2,12 +2,29 @@ package course
 
 import (
 	"context"
+	"os/user"
+	"time"
 )
 
 // Course type
 type Course struct {
-	ID     string
-	Option Option
+	ID           string
+	Option       Option
+	Owner        user.User
+	EnrollCount  int64
+	Title        string
+	ShortDesc    string
+	Desc         string
+	Image        string
+	Start        time.Time
+	URL          string
+	Type         Type
+	Price        float64
+	Discount     float64
+	Content      []*Content
+	EnrollDetail string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // Option is the course option
@@ -18,6 +35,36 @@ type Option struct {
 	Assignment bool
 	Discount   bool
 }
+
+// Type is the course type
+type Type int
+
+// Type values
+const (
+	_ Type = iota
+	Live
+	Video
+	EBook
+)
+
+// Content is the course content
+type Content struct {
+	ID          string
+	Title       string
+	Desc        string
+	VideoID     string
+	VideoType   VideoType
+	DownloadURL string
+}
+
+// VideoType is the course content video type
+type VideoType int
+
+// VideoType values
+const (
+	_ VideoType = iota
+	Youtube
+)
 
 // Repository is the course storage
 type Repository interface {
