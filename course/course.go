@@ -2,23 +2,22 @@ package course
 
 import (
 	"context"
+	"errors"
 	"time"
-
-	"github.com/acoshift/acourse/user"
 )
 
 // Course type
 type Course struct {
 	ID           string
 	Option       Option
-	Owner        user.User
+	Owner        Owner
 	EnrollCount  int64
 	Title        string
 	ShortDesc    string
 	Desc         string
 	Image        string
-	Start        time.Time
-	URL          string
+	Start        *time.Time
+	URL          *string
 	Type         Type
 	Price        float64
 	Discount     float64
@@ -26,6 +25,29 @@ type Course struct {
 	EnrollDetail string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+}
+
+// GetStart returns start
+func (course *Course) GetStart() time.Time {
+	if course.Start == nil {
+		return time.Time{}
+	}
+	return *course.Start
+}
+
+// GetURL returns url
+func (course *Course) GetURL() string {
+	if course.URL == nil {
+		return ""
+	}
+	return *course.URL
+}
+
+type Owner struct {
+	ID       string
+	Username string
+	Name     string
+	Image    string
 }
 
 // Option is the course option
@@ -84,3 +106,8 @@ type Repository interface {
 	// Count counts courses
 	Count(ctx context.Context) (int64, error)
 }
+
+// Errors
+var (
+	ErrNotFound = errors.New("course: not found")
+)
