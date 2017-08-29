@@ -115,7 +115,7 @@ func (r *courseRepository) FindID(ctx context.Context, id string) (*course.Cours
 		&x.Option.Public, &x.Option.Enroll, &x.Option.Attend, &x.Option.Assignment, &x.Option.Discount,
 	)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound
+		return nil, course.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (r *courseRepository) FindURL(ctx context.Context, u string) (*course.Cours
 		&x.Option.Public, &x.Option.Enroll, &x.Option.Attend, &x.Option.Assignment, &x.Option.Discount,
 	)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound
+		return nil, course.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
