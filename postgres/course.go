@@ -5,15 +5,17 @@ import (
 	"database/sql"
 
 	"github.com/acoshift/acourse/course"
+	"github.com/garyburd/redigo/redis"
 )
 
-func NewCourseRepository(db *sql.DB) (course.Repository, error) {
-	r := &courseRepository{db}
+func NewCourseRepository(db *sql.DB, cache *redis.Pool) (course.Repository, error) {
+	r := &courseRepository{db, cache}
 	return r, nil
 }
 
 type courseRepository struct {
-	db *sql.DB
+	db    *sql.DB
+	cache *redis.Pool
 }
 
 func (r *courseRepository) Store(ctx context.Context, course *course.Course) error {
@@ -105,7 +107,7 @@ func (r *courseRepository) FindID(ctx context.Context, id string) (*course.Cours
 			courses as c
 			left join users as u on c.user_id = u.id
 			left join course_options as opt on c.id = opt.course_id
-		where id = $1
+		where c.id = $1
 	`, id).Scan(
 		&x.ID, &x.Title, &x.ShortDesc, &x.Desc, &x.Image, &x.Start,
 		&x.URL, &x.Type, &x.Price, &x.Discount, &x.EnrollDetail,
@@ -119,6 +121,74 @@ func (r *courseRepository) FindID(ctx context.Context, id string) (*course.Cours
 		return nil, err
 	}
 	return &x, nil
+}
+
+func (r *courseRepository) FindURL(ctx context.Context, u string) (*course.Course, error) {
+	var x course.Course
+	err := r.db.QueryRowContext(ctx, `
+		select
+			c.id, c.title, c.short_desc, c.long_desc, c.image, c.start,
+			c.url, c.type, c.price, c.discount, c.enroll_detail,
+			u.id, u.username, u.name, u.image,
+			opt.public, opt.enroll, opt.attend, opt.assignment, opt.discount
+		from
+			courses as c
+			left join users as u on c.user_id = u.id
+			left join course_options as opt on c.id = opt.course_id
+		where c.url = $1
+	`, u).Scan(
+		&x.ID, &x.Title, &x.ShortDesc, &x.Desc, &x.Image, &x.Start,
+		&x.URL, &x.Type, &x.Price, &x.Discount, &x.EnrollDetail,
+		&x.Owner.ID, &x.Owner.Username, &x.Owner.Name, &x.Owner.Image,
+		&x.Option.Public, &x.Option.Enroll, &x.Option.Attend, &x.Option.Assignment, &x.Option.Discount,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
+func (r *courseRepository) List(ctx context.Context, limit, offset int64) ([]*course.Course, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		select
+			c.id, c.title, c.short_desc, c.long_desc, c.image, c.start,
+			c.url, c.type, c.price, c.discount, c.enroll_detail,
+			c.created_at, c.updated_at,
+			u.id, u.username, u.name, u.image,
+			opt.public, opt.enroll, opt.attend, opt.assignment, opt.discount
+		from
+			courses as c
+			left join users as u on c.user_id = u.id
+			left join course_options as opt on c.id = opt.course_id
+		order by c.created_at desc
+		limit $1 offset $2
+	`, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	xs := make([]*course.Course, 0)
+	for rows.Next() {
+		var x course.Course
+		err = rows.Scan(
+			&x.ID, &x.Title, &x.ShortDesc, &x.Desc, &x.Image, &x.Start,
+			&x.URL, &x.Type, &x.Price, &x.Discount, &x.EnrollDetail,
+			&x.CreatedAt, &x.UpdatedAt,
+			&x.Owner.ID, &x.Owner.Username, &x.Owner.Name, &x.Owner.Image,
+			&x.Option.Public, &x.Option.Enroll, &x.Option.Attend, &x.Option.Assignment, &x.Option.Discount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		xs = append(xs, &x)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return xs, nil
 }
 
 func (r *courseRepository) Count(ctx context.Context) (int64, error) {
