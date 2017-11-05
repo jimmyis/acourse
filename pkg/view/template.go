@@ -78,7 +78,7 @@ func init() {
 	}
 
 	// add mime types
-	mime.AddExtensionType(".js", "text/javascript")
+	mime.AddExtensionType(".js", "application/javascript")
 
 	// add minifier functions
 	m.AddFunc("text/html", html.Minify)
