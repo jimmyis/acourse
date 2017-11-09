@@ -70,24 +70,14 @@ func (c *ctrl) CourseView(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var owned bool
+	owned := false
 	if user != nil {
-		owned = user.ID == x.UserID
+		owned = user.ID == x.Owner.ID
 	}
 
 	// if user enrolled or user is owner fetch course contents
 	if enrolled || owned {
 		x.Contents, err = c.repo.GetCourseContents(ctx, x.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	if owned {
-		x.Owner = user
-	} else {
-		x.Owner, err = c.repo.GetUser(ctx, x.UserID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -139,18 +129,12 @@ func (c *ctrl) CourseContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !enrolled && user.ID != x.UserID {
+	if !enrolled && user.ID != x.Owner.ID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
 	x.Contents, err = c.repo.GetCourseContents(ctx, x.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	x.Owner, err = c.repo.GetUser(ctx, x.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -473,7 +457,7 @@ func (c *ctrl) CourseEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is course owner redirect back to course page
-	if user.ID == x.UserID {
+	if user.ID == x.Owner.ID {
 		http.Redirect(w, r, "/course/"+link, http.StatusFound)
 		return
 	}
@@ -535,7 +519,7 @@ func (c *ctrl) postCourseEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is course owner redirect back to course page
-	if user.ID == x.UserID {
+	if user.ID == x.Owner.ID {
 		http.Redirect(w, r, "/course/"+link, http.StatusFound)
 		return
 	}
@@ -692,7 +676,7 @@ func (c *ctrl) CourseAssignment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !enrolled && user.ID != x.UserID {
+	if !enrolled && user.ID != x.Owner.ID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -784,7 +768,7 @@ func (c *ctrl) EditorContentEdit(w http.ResponseWriter, r *http.Request) {
 
 	user := app.GetUser(r.Context())
 	// user is not course owner
-	if user.ID != course.UserID {
+	if user.ID != course.Owner.ID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}

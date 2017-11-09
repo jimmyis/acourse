@@ -63,6 +63,23 @@ const (
 	`
 )
 
+func (repo) CreateCourse(ctx context.Context, x *app.Course) (int64, error) {
+	db := app.GetDatabase(ctx)
+
+	var id int64
+	err := db.QueryRowContext(ctx, `
+		insert into courses
+			(user_id, title, short_desc, long_desc, image, start)
+		values
+			($1, $2, $3, $4, $5, $6)
+		returning id
+	`, x.Owner.ID, x.Title, x.ShortDesc, x.Desc, x.Image, x.Start).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
 // SaveCourse saves course
 func (repo) SaveCourse(ctx context.Context, x *app.Course) error {
 	tx := app.GetTransaction(ctx)
@@ -79,7 +96,7 @@ func (repo) SaveCourse(ctx context.Context, x *app.Course) error {
 			(id, user_id, title, short_desc, long_desc, image, start, url, type, price, discount, enroll_detail, updated_at)
 		values
 			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now())
-	`, x.ID, x.UserID, x.Title, x.ShortDesc, x.Desc, x.Image, x.Start, x.URL, x.Type, x.Price, x.Discount, x.EnrollDetail)
+	`, x.ID, x.Owner.ID, x.Title, x.ShortDesc, x.Desc, x.Image, x.Start, x.URL, x.Type, x.Price, x.Discount, x.EnrollDetail)
 	if err != nil {
 		return err
 	}
@@ -142,13 +159,37 @@ func (repo) GetCourse(ctx context.Context, courseID string) (*app.Course, error)
 	var x app.Course
 	err := db.QueryRowContext(ctx, `
 		select
-			id, user_id, title, short_desc, long_desc, image, start, url, type, price, courses.discount, enroll_detail,
-			opt.public, opt.enroll, opt.attend, opt.assignment, opt.discount
-		from courses left join course_options as opt on courses.id = opt.course_id
-		where id = $1
+			courses.id,
+			courses.title,
+			courses.short_desc,
+			courses.long_desc,
+			courses.image,
+			courses.start,
+			courses.url,
+			courses.type,
+			courses.price,
+			courses.discount,
+			courses.enroll_detail,
+			opt.public, opt.enroll, opt.attend, opt.assignment, opt.discount,
+			users.id, users.username, users.name, users.image
+		from courses
+			left join course_options as opt on courses.id = opt.course_id
+			left join users on courses.user_id = users.id
+		where courses.id = $1
 	`, courseID).Scan(
-		&x.ID, &x.UserID, &x.Title, &x.ShortDesc, &x.Desc, &x.Image, &x.Start, &x.URL, &x.Type, &x.Price, &x.Discount, &x.EnrollDetail,
+		&x.ID,
+		&x.Title,
+		&x.ShortDesc,
+		&x.Desc,
+		&x.Image,
+		&x.Start,
+		&x.URL,
+		&x.Type,
+		&x.Price,
+		&x.Discount,
+		&x.EnrollDetail,
 		&x.Option.Public, &x.Option.Enroll, &x.Option.Attend, &x.Option.Assignment, &x.Option.Discount,
+		&x.Owner.ID, &x.Owner.Username, &x.Owner.Name, &x.Owner.Image,
 	)
 	if err == sql.ErrNoRows {
 		return nil, app.ErrNotFound
@@ -264,6 +305,7 @@ func (repo) ListCourses(ctx context.Context, limit, offset int64) ([]*app.Course
 			course_options.discount,
 			users.id,
 			users.username,
+			users.name,
 			users.image
 		from courses
 			left join course_options on courses.id = course_options.course_id
@@ -277,12 +319,29 @@ func (repo) ListCourses(ctx context.Context, limit, offset int64) ([]*app.Course
 	defer rows.Close()
 	for rows.Next() {
 		var x app.Course
-		x.Owner = &app.User{}
-		err := rows.Scan(&x.ID,
-			&x.Title, &x.ShortDesc, &x.Desc, &x.Image, &x.Start, &x.URL, &x.Type, &x.Price, &x.Discount, &x.EnrollDetail,
-			&x.CreatedAt, &x.UpdatedAt,
-			&x.Option.Public, &x.Option.Enroll, &x.Option.Attend, &x.Option.Assignment, &x.Option.Discount,
-			&x.Owner.ID, &x.Owner.Username, &x.Owner.Image,
+		err := rows.Scan(
+			&x.ID,
+			&x.Title,
+			&x.ShortDesc,
+			&x.Desc,
+			&x.Image,
+			&x.Start,
+			&x.URL,
+			&x.Type,
+			&x.Price,
+			&x.Discount,
+			&x.EnrollDetail,
+			&x.CreatedAt,
+			&x.UpdatedAt,
+			&x.Option.Public,
+			&x.Option.Enroll,
+			&x.Option.Attend,
+			&x.Option.Assignment,
+			&x.Option.Discount,
+			&x.Owner.ID,
+			&x.Owner.Username,
+			&x.Owner.Name,
+			&x.Owner.Image,
 		)
 		if err != nil {
 			return nil, err

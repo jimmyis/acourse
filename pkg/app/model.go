@@ -28,17 +28,24 @@ type UserRole struct {
 	Instructor sql.NullBool
 }
 
+// CourseOwner entity
+type CourseOwner struct {
+	ID       string
+	Username string
+	Name     string
+	Image    string
+}
+
 // Course model
 type Course struct {
 	ID            string
 	Option        CourseOption
-	Owner         *User
+	Owner         CourseOwner
 	EnrollCount   int64
 	Title         string
 	ShortDesc     string
 	Desc          string
 	Image         string
-	UserID        string
 	Start         pq.NullTime
 	URL           sql.NullString // MUST not parsable to int
 	Type          int

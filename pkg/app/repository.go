@@ -23,6 +23,7 @@ type Repository interface {
 	CreateUser(ctx context.Context, x *User) error
 
 	// Course
+	CreateCourse(ctx context.Context, x *Course) (int64, error)
 	SaveCourse(ctx context.Context, x *Course) error
 	GetCourses(ctx context.Context, courseIDs []string) ([]*Course, error)
 	GetCourse(ctx context.Context, courseID string) (*Course, error)

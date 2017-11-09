@@ -140,7 +140,7 @@ func onlyInstructor(h http.Handler) http.Handler {
 	})
 }
 
-func isCourseOwner(db *sql.DB, view View) middleware.Middleware {
+func isCourseOwner(view View) middleware.Middleware {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -153,6 +153,7 @@ func isCourseOwner(db *sql.DB, view View) middleware.Middleware {
 			id := r.FormValue("id")
 
 			var ownerID string
+			db := GetDatabase(ctx)
 			err := db.QueryRowContext(ctx, `select user_id from courses where id = $1`, id).Scan(&ownerID)
 			if err == sql.ErrNoRows {
 				view.NotFound(w, r)

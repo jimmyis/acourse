@@ -33,7 +33,7 @@ func New(config Config) http.Handler {
 	}()
 
 	// create middlewares
-	isCourseOwner := isCourseOwner(config.DB, config.View)
+	isCourseOwner := isCourseOwner(config.View)
 
 	// create mux
 	mux := http.NewServeMux()
