@@ -1,14 +1,10 @@
-create database acourse;
-
-set database = acourse;
-
 create table users (
-  id varchar not null,
-  username varchar not null,
-  name varchar not null,
-  email varchar,
-  about_me varchar not null default '',
-  image varchar not null default '',
+  id string not null,
+  username string not null,
+  name string not null,
+  email string,
+  about_me string not null default '',
+  image string not null default '',
   created_at timestamp not null default now(),
   updated_at timestamp not null default now(),
   primary key (id)
@@ -18,7 +14,7 @@ create unique index on users (email);
 create index on users (created_at desc);
 
 create table roles (
-  user_id varchar,
+  user_id string,
   admin bool not null default false,
   instructor bool not null default false,
   created_at timestamp not null default now(),
@@ -30,18 +26,18 @@ create index on roles (admin);
 create index on roles (instructor);
 
 create table courses (
-  id uuid default gen_random_uuid(),
-  user_id varchar not null,
-  title varchar not null,
-  short_desc varchar not null,
-  long_desc varchar not null,
-  image varchar not null,
+  id serial,
+  user_id string not null,
+  title string not null,
+  short_desc string not null,
+  long_desc string not null,
+  image string not null,
   start timestamp default null,
-  url varchar default null,
+  url string default null,
   type int not null default 0,
   price decimal(9,2) not null default 0,
   discount decimal(9,2) default 0,
-  enroll_detail varchar not null default '',
+  enroll_detail string not null default '',
   created_at timestamp not null default now(),
   updated_at timestamp not null default now(),
   primary key (id),
@@ -52,7 +48,7 @@ create index on courses (created_at desc);
 create index on courses (updated_at desc);
 
 create table course_options (
-  course_id uuid,
+  course_id int,
   public bool not null default false,
   enroll bool not null default false,
   attend bool not null default false,
@@ -68,14 +64,14 @@ create index on course_options (public, discount);
 create index on course_options (public, discount, enroll);
 
 create table course_contents (
-  id uuid default gen_random_uuid(),
+  id serial,
   course_id uuid not null,
   i int not null default 0,
-  title varchar not null default '',
-  long_desc varchar not null default '',
-  video_id varchar not null default '',
+  title string not null default '',
+  long_desc string not null default '',
+  video_id string not null default '',
   video_type int not null default 0,
-  download_url varchar not null default '',
+  download_url string not null default '',
   created_at timestamp not null default now(),
   updated_at timestamp not null default now(),
   primary key (id),
@@ -84,11 +80,11 @@ create table course_contents (
 create index on course_contents (course_id, i);
 
 create table assignments (
-  id uuid default gen_random_uuid(),
+  id serial,
   course_id uuid not null,
   i int not null,
-  title varchar not null,
-  long_desc varchar not null,
+  title string not null,
+  long_desc string not null,
   open bool not null default false,
   created_at timestamp not null default now(),
   updated_at timestamp not null default now(),
@@ -98,10 +94,10 @@ create table assignments (
 create index on assignments (course_id, i);
 
 create table user_assignments (
-  id uuid default gen_random_uuid(),
-  user_id varchar not null,
+  id serial,
+  user_id string not null,
   assignment_id uuid not null,
-  download_url varchar not null,
+  download_url string not null,
   created_at timestamp not null default now(),
   primary key (id),
   foreign key (user_id) references users (id),
@@ -110,7 +106,7 @@ create table user_assignments (
 create index on user_assignments (created_at);
 
 create table enrolls (
-  user_id varchar,
+  user_id string,
   course_id uuid not null,
   created_at timestamp not null default now(),
   primary key (user_id, course_id),
@@ -122,8 +118,8 @@ create index on enrolls (user_id, created_at);
 create index on enrolls (course_id, created_at);
 
 create table attends (
-  id uuid default gen_random_uuid(),
-  user_id varchar not null,
+  id serial,
+  user_id string not null,
   course_id uuid not null,
   created_at timestamp not null default now(),
   primary key (id),
@@ -136,13 +132,13 @@ create index on attends (course_id, created_at);
 create index on attends (user_id, course_id, created_at);
 
 create table payments (
-  id uuid default gen_random_uuid(),
-  user_id varchar not null,
+  id serial,
+  user_id string not null,
   course_id uuid not null,
-  image varchar not null,
+  image string not null,
   price decimal(9, 2) not null,
   original_price decimal(9, 2) not null,
-  code varchar not null,
+  code string not null,
   status int not null,
   created_at timestamp not null default now(),
   updated_at timestamp not null default now(),
